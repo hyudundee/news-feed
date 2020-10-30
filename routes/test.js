@@ -1,0 +1,5 @@
+const express = require('express')
+const router = express.Router()
+const myDB = require('../config/myDB.js')
+console.log(myDB)
+let res = myDB.getUsers()
