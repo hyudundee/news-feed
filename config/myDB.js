@@ -8,24 +8,54 @@ const myDB = () => {
     const DB = {}
     const getDB = () => new sqlite3.Database('./newsFeed2.db');
 
-    myDB.getUsers = (page) => {
+    // db.all is asynchronous. So you need to call it with a callback or a promise
+    myDB.getUsersCallback = (page, callback) => {
         const db = getDB()
         let page_size = 10
         let sql = `select userID, name, email, createDate from User
                    order by userID
                    limit ${page_size} OFFSET ${page_size * (page - 1)}
-                   `
-        let ret;
-        db.all(sql, [], (err, rows) => {  
+                   `;
+
+
+        db.all(sql, [], (err, rows) => {
             if (err) {
                 throw err
             }
-            console.log(res)
-            ret = rows
-        })
-        db.close()
-        return ret
-    }
+
+            // if your call is successful, you pass the rows to the callback
+            callback(rows);
+            db.close();
+        });
+
+        return ret;
+    };
+
+    // With a promise
+    myDB.getUsersPromise = (page) => {
+        const db = getDB();
+        let page_size = 10
+        let sql = `select userID, name, email, createDate from User
+                   order by userID
+                   limit ${page_size} OFFSET ${page_size * (page - 1)}
+                   `
+
+        console.log("calling promise");
+        // A promise is an object that handles asynchronous calls
+        // you should call resolve if the call is successful or
+        // reject if it isn't
+        return new Promise((resolve, reject) => {
+            db.all(sql, [], (err, rows) => {
+                if (err) {
+                    console.log("error", err);
+                    return reject(err);
+                }
+                console.log(rows);
+                resolve(rows);
+            });
+        }).finally(() => db.close()); // This will close the connection once the promise is done
+
+    };
 
     myDB.createUser = (user) => {
         const db = getDB()
@@ -75,7 +105,9 @@ const myDB = () => {
         db.close();
         return 'User deleted!'
     }
-    return DB
+
+    // You need to return myDB, which is the object instance
+    return myDB;
 }
 
 module.exports = myDB()
